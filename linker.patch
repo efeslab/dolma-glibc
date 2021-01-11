@@ -1,0 +1,370 @@
+From 07cbf1984f8f2a8e0ea53558ff82846b9f6c1ccb Mon Sep 17 00:00:00 2001
+From: Kevin Loughlin <kevlough@umich.edu>
+Date: Sat, 25 Apr 2020 21:42:55 +0000
+Subject: [PATCH] Hide cpu features
+
+---
+ sysdeps/x86/cpu-features.c | 338 ++++++++++++++++++-------------------
+ 1 file changed, 169 insertions(+), 169 deletions(-)
+
+diff --git a/sysdeps/x86/cpu-features.c b/sysdeps/x86/cpu-features.c
+index 121f706402..026215076b 100644
+--- a/sysdeps/x86/cpu-features.c
++++ b/sysdeps/x86/cpu-features.c
+@@ -42,30 +42,30 @@ extern void TUNABLE_CALLBACK (set_x86_shstk) (tunable_val_t *)
+ # include <cet-tunables.h>
+ #endif
+ 
+-static void
+-get_extended_indices (struct cpu_features *cpu_features)
+-{
+-  unsigned int eax, ebx, ecx, edx;
+-  __cpuid (0x80000000, eax, ebx, ecx, edx);
+-  if (eax >= 0x80000001)
+-    __cpuid (0x80000001,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].eax,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].ebx,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].ecx,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].edx);
+-  if (eax >= 0x80000007)
+-    __cpuid (0x80000007,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].eax,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].ebx,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].ecx,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].edx);
+-  if (eax >= 0x80000008)
+-    __cpuid (0x80000008,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].eax,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].ebx,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].ecx,
+-	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].edx);
+-}
++// static void
++// get_extended_indices (struct cpu_features *cpu_features)
++// {
++//   unsigned int eax, ebx, ecx, edx;
++//   __cpuid (0x80000000, eax, ebx, ecx, edx);
++//   if (eax >= 0x80000001)
++//     __cpuid (0x80000001,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].eax,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].ebx,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].ecx,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000001].edx);
++//   if (eax >= 0x80000007)
++//     __cpuid (0x80000007,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].eax,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].ebx,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].ecx,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000007].edx);
++//   if (eax >= 0x80000008)
++//     __cpuid (0x80000008,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].eax,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].ebx,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].ecx,
++// 	     cpu_features->cpuid[COMMON_CPUID_INDEX_80000008].edx);
++// }
+ 
+ static void
+ get_common_indices (struct cpu_features *cpu_features,
+@@ -322,153 +322,153 @@ init_cpu_features (struct cpu_features *cpu_features)
+   __cpuid (0, cpu_features->basic.max_cpuid, ebx, ecx, edx);
+ 
+   /* This spells out "GenuineIntel".  */
+-  if (ebx == 0x756e6547 && ecx == 0x6c65746e && edx == 0x49656e69)
+-    {
+-      unsigned int extended_model;
+-
+-      kind = arch_kind_intel;
+-
+-      get_common_indices (cpu_features, &family, &model, &extended_model,
+-			  &stepping);
+-
+-      get_extended_indices (cpu_features);
+-
+-      if (family == 0x06)
+-	{
+-	  model += extended_model;
+-	  switch (model)
+-	    {
+-	    case 0x1c:
+-	    case 0x26:
+-	      /* BSF is slow on Atom.  */
+-	      cpu_features->feature[index_arch_Slow_BSF]
+-		|= bit_arch_Slow_BSF;
+-	      break;
+-
+-	    case 0x57:
+-	      /* Knights Landing.  Enable Silvermont optimizations.  */
+-
+-	    case 0x5c:
+-	    case 0x5f:
+-	      /* Unaligned load versions are faster than SSSE3
+-		 on Goldmont.  */
+-
+-	    case 0x4c:
+-	      /* Airmont is a die shrink of Silvermont.  */
+-
+-	    case 0x37:
+-	    case 0x4a:
+-	    case 0x4d:
+-	    case 0x5a:
+-	    case 0x5d:
+-	      /* Unaligned load versions are faster than SSSE3
+-		 on Silvermont.  */
+-	      cpu_features->feature[index_arch_Fast_Unaligned_Load]
+-		|= (bit_arch_Fast_Unaligned_Load
+-		    | bit_arch_Fast_Unaligned_Copy
+-		    | bit_arch_Prefer_PMINUB_for_stringop
+-		    | bit_arch_Slow_SSE4_2);
+-	      break;
+-
+-	    default:
+-	      /* Unknown family 0x06 processors.  Assuming this is one
+-		 of Core i3/i5/i7 processors if AVX is available.  */
+-	      if (!CPU_FEATURES_CPU_P (cpu_features, AVX))
+-		break;
+-
+-	    case 0x1a:
+-	    case 0x1e:
+-	    case 0x1f:
+-	    case 0x25:
+-	    case 0x2c:
+-	    case 0x2e:
+-	    case 0x2f:
+-	      /* Rep string instructions, unaligned load, unaligned copy,
+-		 and pminub are fast on Intel Core i3, i5 and i7.  */
+-	      cpu_features->feature[index_arch_Fast_Rep_String]
+-		|= (bit_arch_Fast_Rep_String
+-		    | bit_arch_Fast_Unaligned_Load
+-		    | bit_arch_Fast_Unaligned_Copy
+-		    | bit_arch_Prefer_PMINUB_for_stringop);
+-	      break;
+-	    }
+-
+-	 /* Disable TSX on some Haswell processors to avoid TSX on kernels that
+-	    weren't updated with the latest microcode package (which disables
+-	    broken feature by default).  */
+-	 switch (model)
+-	    {
+-	    case 0x3f:
+-	      /* Xeon E7 v3 with stepping >= 4 has working TSX.  */
+-	      if (stepping >= 4)
+-		break;
+-	    case 0x3c:
+-	    case 0x45:
+-	    case 0x46:
+-	      /* Disable Intel TSX on Haswell processors (except Xeon E7 v3
+-		 with stepping >= 4) to avoid TSX on kernels that weren't
+-		 updated with the latest microcode package (which disables
+-		 broken feature by default).  */
+-	      cpu_features->cpuid[index_cpu_RTM].reg_RTM &= ~bit_cpu_RTM;
+-	      break;
+-	    }
+-	}
+-
+-
+-      /* Since AVX512ER is unique to Xeon Phi, set Prefer_No_VZEROUPPER
+-         if AVX512ER is available.  Don't use AVX512 to avoid lower CPU
+-	 frequency if AVX512ER isn't available.  */
+-      if (CPU_FEATURES_CPU_P (cpu_features, AVX512ER))
+-	cpu_features->feature[index_arch_Prefer_No_VZEROUPPER]
+-	  |= bit_arch_Prefer_No_VZEROUPPER;
+-      else
+-	cpu_features->feature[index_arch_Prefer_No_AVX512]
+-	  |= bit_arch_Prefer_No_AVX512;
+-    }
+-  /* This spells out "AuthenticAMD" or "HygonGenuine".  */
+-  else if ((ebx == 0x68747541 && ecx == 0x444d4163 && edx == 0x69746e65)
+-	   || (ebx == 0x6f677948 && ecx == 0x656e6975 && edx == 0x6e65476e))
+-    {
+-      unsigned int extended_model;
+-
+-      kind = arch_kind_amd;
+-
+-      get_common_indices (cpu_features, &family, &model, &extended_model,
+-			  &stepping);
+-
+-      get_extended_indices (cpu_features);
+-
+-      ecx = cpu_features->cpuid[COMMON_CPUID_INDEX_1].ecx;
+-
+-      if (HAS_ARCH_FEATURE (AVX_Usable))
+-	{
+-	  /* Since the FMA4 bit is in COMMON_CPUID_INDEX_80000001 and
+-	     FMA4 requires AVX, determine if FMA4 is usable here.  */
+-	  if (CPU_FEATURES_CPU_P (cpu_features, FMA4))
+-	    cpu_features->feature[index_arch_FMA4_Usable]
+-	      |= bit_arch_FMA4_Usable;
+-	}
+-
+-      if (family == 0x15)
+-	{
+-	  /* "Excavator"   */
+-	  if (model >= 0x60 && model <= 0x7f)
+-	  {
+-	    cpu_features->feature[index_arch_Fast_Unaligned_Load]
+-	      |= (bit_arch_Fast_Unaligned_Load
+-		  | bit_arch_Fast_Copy_Backward);
+-
+-	    /* Unaligned AVX loads are slower.*/
+-	    cpu_features->feature[index_arch_AVX_Fast_Unaligned_Load]
+-		  &= ~bit_arch_AVX_Fast_Unaligned_Load;
+-	  }
+-	}
+-    }
+-  else
+-    {
++//   if (ebx == 0x756e6547 && ecx == 0x6c65746e && edx == 0x49656e69)
++//     {
++//       unsigned int extended_model;
++
++//       kind = arch_kind_intel;
++
++//       get_common_indices (cpu_features, &family, &model, &extended_model,
++// 			  &stepping);
++
++//       get_extended_indices (cpu_features);
++
++//       if (family == 0x06)
++// 	{
++// 	  model += extended_model;
++// 	  switch (model)
++// 	    {
++// 	    case 0x1c:
++// 	    case 0x26:
++// 	      /* BSF is slow on Atom.  */
++// 	      cpu_features->feature[index_arch_Slow_BSF]
++// 		|= bit_arch_Slow_BSF;
++// 	      break;
++
++// 	    case 0x57:
++// 	      /* Knights Landing.  Enable Silvermont optimizations.  */
++
++// 	    case 0x5c:
++// 	    case 0x5f:
++// 	      /* Unaligned load versions are faster than SSSE3
++// 		 on Goldmont.  */
++
++// 	    case 0x4c:
++// 	      /* Airmont is a die shrink of Silvermont.  */
++
++// 	    case 0x37:
++// 	    case 0x4a:
++// 	    case 0x4d:
++// 	    case 0x5a:
++// 	    case 0x5d:
++// 	      /* Unaligned load versions are faster than SSSE3
++// 		 on Silvermont.  */
++// 	      cpu_features->feature[index_arch_Fast_Unaligned_Load]
++// 		|= (bit_arch_Fast_Unaligned_Load
++// 		    | bit_arch_Fast_Unaligned_Copy
++// 		    | bit_arch_Prefer_PMINUB_for_stringop
++// 		    | bit_arch_Slow_SSE4_2);
++// 	      break;
++
++// 	    default:
++// 	      /* Unknown family 0x06 processors.  Assuming this is one
++// 		 of Core i3/i5/i7 processors if AVX is available.  */
++// 	      if (!CPU_FEATURES_CPU_P (cpu_features, AVX))
++// 		break;
++
++// 	    case 0x1a:
++// 	    case 0x1e:
++// 	    case 0x1f:
++// 	    case 0x25:
++// 	    case 0x2c:
++// 	    case 0x2e:
++// 	    case 0x2f:
++// 	      /* Rep string instructions, unaligned load, unaligned copy,
++// 		 and pminub are fast on Intel Core i3, i5 and i7.  */
++// 	      cpu_features->feature[index_arch_Fast_Rep_String]
++// 		|= (bit_arch_Fast_Rep_String
++// 		    | bit_arch_Fast_Unaligned_Load
++// 		    | bit_arch_Fast_Unaligned_Copy
++// 		    | bit_arch_Prefer_PMINUB_for_stringop);
++// 	      break;
++// 	    }
++
++// 	 /* Disable TSX on some Haswell processors to avoid TSX on kernels that
++// 	    weren't updated with the latest microcode package (which disables
++// 	    broken feature by default).  */
++// 	 switch (model)
++// 	    {
++// 	    case 0x3f:
++// 	      /* Xeon E7 v3 with stepping >= 4 has working TSX.  */
++// 	      if (stepping >= 4)
++// 		break;
++// 	    case 0x3c:
++// 	    case 0x45:
++// 	    case 0x46:
++// 	      /* Disable Intel TSX on Haswell processors (except Xeon E7 v3
++// 		 with stepping >= 4) to avoid TSX on kernels that weren't
++// 		 updated with the latest microcode package (which disables
++// 		 broken feature by default).  */
++// 	      cpu_features->cpuid[index_cpu_RTM].reg_RTM &= ~bit_cpu_RTM;
++// 	      break;
++// 	    }
++// 	}
++
++
++//       /* Since AVX512ER is unique to Xeon Phi, set Prefer_No_VZEROUPPER
++//          if AVX512ER is available.  Don't use AVX512 to avoid lower CPU
++// 	 frequency if AVX512ER isn't available.  */
++//       if (CPU_FEATURES_CPU_P (cpu_features, AVX512ER))
++// 	cpu_features->feature[index_arch_Prefer_No_VZEROUPPER]
++// 	  |= bit_arch_Prefer_No_VZEROUPPER;
++//       else
++// 	cpu_features->feature[index_arch_Prefer_No_AVX512]
++// 	  |= bit_arch_Prefer_No_AVX512;
++//     }
++//   /* This spells out "AuthenticAMD" or "HygonGenuine".  */
++//   else if ((ebx == 0x68747541 && ecx == 0x444d4163 && edx == 0x69746e65)
++// 	   || (ebx == 0x6f677948 && ecx == 0x656e6975 && edx == 0x6e65476e))
++//     {
++//       unsigned int extended_model;
++
++//       kind = arch_kind_amd;
++
++//       get_common_indices (cpu_features, &family, &model, &extended_model,
++// 			  &stepping);
++
++//       get_extended_indices (cpu_features);
++
++//       ecx = cpu_features->cpuid[COMMON_CPUID_INDEX_1].ecx;
++
++//       if (HAS_ARCH_FEATURE (AVX_Usable))
++// 	{
++// 	  /* Since the FMA4 bit is in COMMON_CPUID_INDEX_80000001 and
++// 	     FMA4 requires AVX, determine if FMA4 is usable here.  */
++// 	  if (CPU_FEATURES_CPU_P (cpu_features, FMA4))
++// 	    cpu_features->feature[index_arch_FMA4_Usable]
++// 	      |= bit_arch_FMA4_Usable;
++// 	}
++
++//       if (family == 0x15)
++// 	{
++// 	  /* "Excavator"   */
++// 	  if (model >= 0x60 && model <= 0x7f)
++// 	  {
++// 	    cpu_features->feature[index_arch_Fast_Unaligned_Load]
++// 	      |= (bit_arch_Fast_Unaligned_Load
++// 		  | bit_arch_Fast_Copy_Backward);
++
++// 	    /* Unaligned AVX loads are slower.*/
++// 	    cpu_features->feature[index_arch_AVX_Fast_Unaligned_Load]
++// 		  &= ~bit_arch_AVX_Fast_Unaligned_Load;
++// 	  }
++// 	}
++//     }
++//   else
++//     {
+       kind = arch_kind_other;
+       get_common_indices (cpu_features, NULL, NULL, NULL, NULL);
+-    }
++    // }
+ 
+   /* Support i586 if CX8 is available.  */
+   if (CPU_FEATURES_CPU_P (cpu_features, CX8))
+-- 
+2.17.1
+
